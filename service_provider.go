@@ -20,6 +20,7 @@ import (
 	"github.com/crewjam/saml/xmlenc"
 	dsig "github.com/russellhaering/goxmldsig"
 	"github.com/russellhaering/goxmldsig/etreeutils"
+	xrv "github.com/mattermost/xml-roundtrip-validator"
 )
 
 // NameIDFormat is the format of the id
@@ -401,7 +402,10 @@ func (sp *ServiceProvider) ParseResponse(req *http.Request, possibleRequestIDs [
 		return nil, retErr
 	}
 	retErr.Response = string(rawResponseBuf)
-
+	if err := xrv.Validate(bytes.NewReader(rawResponseBuf)); err != nil {
+		retErr.PrivateErr = fmt.Errorf("invalid xml: %s", err)
+		return nil, retErr
+	}
 	// do some validation first before we decrypt
 	resp := Response{}
 	if err := xml.Unmarshal(rawResponseBuf, &resp); err != nil {
@@ -476,6 +480,11 @@ func (sp *ServiceProvider) ParseResponse(req *http.Request, possibleRequestIDs [
 		}
 		retErr.Response = string(plaintextAssertion)
 
+		if err := xrv.Validate(bytes.NewReader(plaintextAssertion)); err != nil {
+			retErr.PrivateErr = fmt.Errorf("plaintext response contains invalid XML: %s", err)
+			return nil, retErr
+		}
+
 		doc = etree.NewDocument()
 		if err := doc.ReadFromBytes(plaintextAssertion); err != nil {
 			retErr.PrivateErr = fmt.Errorf("cannot parse plaintext response %v", err)
@@ -488,6 +497,8 @@ func (sp *ServiceProvider) ParseResponse(req *http.Request, possibleRequestIDs [
 		}
 
 		assertion = &Assertion{}
+		// Note: plaintextAssertion is known to be safe to parse because
+		// plaintextAssertion is unmodified from when xrv.Validate() was called above.
 		if err := xml.Unmarshal(plaintextAssertion, assertion); err != nil {
 			retErr.PrivateErr = err
 			return nil, retErr
