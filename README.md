@@ -10,6 +10,12 @@ version bumps for dependent modules, via dependabot.
 
 Compared to the root the fork contains the following changes
 
+  1. Application of pull request https://github.com/crewjam/saml/pull/491
+
+     This fixes the mishandling of compressed data. The XML parser always operated on the input data
+     even if it was compressed. While decompression was performed the resulting data was ignored and
+     not used.
+
   1. Application of pull request https://github.com/crewjam/saml/pull/449
 
      This adds the missing verification of detached signatures to the handling of logout responses.
