@@ -19,7 +19,6 @@ func TestSigningAndValidation(t *testing.T) {
 		desc         string
 		relayState   string
 		requestType  reqType
-		wantErr      bool
 		wantRawQuery string
 	}
 
@@ -54,9 +53,11 @@ func TestSigningAndValidation(t *testing.T) {
 	}
 
 	err := xml.Unmarshal(idpMetadata, &s.IDPMetadata)
-	idpCert, err := s.getIDPSigningCerts()
+	assert.NilError(t, err)
 
-	assert.Check(t, err == nil)
+	idpCert, err := s.getIDPSigningCerts()
+	assert.NilError(t, err)
+
 	assert.Check(t,
 		s.Certificate.Issuer.CommonName == idpCert[0].Issuer.CommonName, "expected %s, got %s",
 		s.Certificate.Issuer.CommonName, idpCert[0].Issuer.CommonName)
@@ -102,9 +103,10 @@ func TestInvalidSignatureAlgorithm(t *testing.T) {
 	}
 
 	err := xml.Unmarshal(idpMetadata, &s.IDPMetadata)
+	assert.NilError(t, err)
 	idpCert, err := s.getIDPSigningCerts()
+	assert.NilError(t, err)
 
-	assert.Check(t, err == nil)
 	assert.Check(t,
 		s.Certificate.Issuer.CommonName == idpCert[0].Issuer.CommonName, "expected %s, got %s",
 		s.Certificate.Issuer.CommonName, idpCert[0].Issuer.CommonName)
